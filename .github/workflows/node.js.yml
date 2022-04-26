@@ -5,9 +5,7 @@ name: CI-CD
 
 on:
   push:
-    branches: [ main ]
-  pull_request:
-    branches: [ main ]
+    branches: [ release ]
 
 jobs:
   build:
@@ -18,7 +16,8 @@ jobs:
       matrix:
         node-version: [16.x]
         # See supported Node.js release schedule at https://nodejs.org/en/about/releases/
-
+    env: 
+      LineToken: ${{ token }}
     steps:
     - uses: actions/checkout@v3
     - name: Use Node.js ${{ matrix.node-version }}
@@ -27,3 +26,25 @@ jobs:
         node-version: ${{ matrix.node-version }}
         cache: 'npm'
     - run: npm ci
+    - run: npm run test
+  
+  deploy:
+    # The type of runner that the job will run on
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v1
+    -   # build image
+      run: |
+          docker info
+          docker build -t linenotification -f Dockerfile .
+    - name: Build and deploy the Docker image
+      env: 
+        HEROKU_API_KEY: ${{ secrets.HEROKU_API_KEY }}
+        APP_NAME: ${{ 'intergoldlinenotification' }}
+    
+      run: |
+        docker login --username=_ --password=$HEROKU_API_KEY registry.heroku.com
+        docker tag linenotification registry.heroku.com/$APP_NAME/web
+        docker push registry.heroku.com/$APP_NAME/web                
+        curl https://cli-assets.heroku.com/install.sh | sh
+        heroku container:release web -a $APP_NAME
