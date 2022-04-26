@@ -25,11 +25,7 @@ jobs:
       with:
         node-version: ${{ matrix.node-version }}
         cache: 'npm'
-    - run: npm ci
-    - name : test
-      run: |
-          pushd ./LineNotifyServiceFastify/
-          npm test
+    - run: npm test
           
   deploy:
     # The type of runner that the job will run on
